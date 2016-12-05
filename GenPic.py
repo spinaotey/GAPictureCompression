@@ -3,6 +3,40 @@ from PIL import Image
 from PIL import ImageDraw
 from scipy import stats
 
+def GeneticAlgorithm(picfile,maxIt,nInd,nPol):
+    #Initiate population and assess fitness
+    population = np.empty(nInd,dtype=np.object)
+    fitness = np.empty(nInd,dtype=np.uint64)
+    pic = Image.open(picfile)
+    for i in range(nInd):
+        population[i] = GenPic.PicGen(pic,nPol)
+        fitness[i] = population[i].getFitness()
+    #Find best
+    fmax = fitness.argmax()
+    best = population[fmax]
+    bestFit = fitness[fmax]
+    #Main loop
+    i = 0   
+    while(i<maxIt):
+        P1 = GenPic.tournamentSelect(population,fitness,i)
+        P2 = GenPic.tournamentSelect(population,fitness,i)
+        C1,C2 = GenPic.crossover(P1,P2,i)
+        C1.mutate();
+        C2.mutate();
+        #Substitute two parents with the new children
+        ind = np.choice(np.arange(nInd),size=2,replace=False)
+        population[ind] = (C1,C2)
+        fitness[ind[0]] = population[ind[0]].getFitness()
+        if (fitness[ind[0]] > bestFit):
+            bestFit = fitness[ind[0]]
+            best = population[ind[0]]
+        fitness[ind[1]] = population[ind[1]].getFitness()
+        if (fitness[ind[1]] > bestFit):
+            bestFit = fitness[ind[1]]
+            best = population[ind[1]]
+    return(best)
+
+
 def alphaComposite(src, dst):
     '''
     Return the alpha composite of src and dst.
