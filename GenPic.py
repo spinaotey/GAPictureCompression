@@ -18,8 +18,8 @@ def GeneticAlgorithm(picfile,maxIt,nInd,nPol):
     #Main loop
     i = 0   
     while(i<maxIt):
-        P1 = GenPic.tournamentSelect(population,fitness,i)
-        P2 = GenPic.tournamentSelect(population,fitness,i)
+        P1 = GenPic.tournamentSelect(population,fitness,maxIt)
+        P2 = GenPic.tournamentSelect(population,fitness,maxIt)
         C1,C2 = GenPic.crossover(P1,P2,i)
         C1.mutate();
         C2.mutate();
@@ -35,6 +35,8 @@ def GeneticAlgorithm(picfile,maxIt,nInd,nPol):
             bestFit = fitness[ind[1]]
             best = population[ind[1]]
     return(best)
+
+
 
 
 def alphaComposite(src, dst):
@@ -152,8 +154,18 @@ class PicGen:
         self.pic = Image.new("RGBA",self.size,tuple(self.bg))
         for i in range(self.n):
             self.pic = alphaComposite(self.polygon[i].makePoly(),self.pic)
-        
+    
+    def getFitness(self):
+        if not hasattr(self,"pic"):
+            self.makePic()
+            if hasattr(self,"fitness"):
+                del(self.fitness)
+        if not hasattr(self,"fitness"):
+            self.fitness =  np.sum(np.abs(np.array(list(self.pic.getdata()))-np.array(list(self.trgImg.getdata()))))
+        return self.fitness
+
     def showPic(self):
-        self.makePic();
+        if not hasattr(self,"pic"):
+            self.makePic();
         self.pic.show();
 
