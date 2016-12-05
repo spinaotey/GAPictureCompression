@@ -9,7 +9,7 @@ def GeneticAlgorithm(picfile,maxIt,nInd,nPol):
     fitness = np.empty(nInd,dtype=np.uint64)
     pic = Image.open(picfile)
     for i in range(nInd):
-        population[i] = GenPic.PicGen(pic,nPol)
+        population[i] = PicGen(pic,nPol)
         fitness[i] = population[i].getFitness()
     #Find best
     fmax = fitness.argmax()
@@ -18,9 +18,9 @@ def GeneticAlgorithm(picfile,maxIt,nInd,nPol):
     #Main loop
     i = 0   
     while(i<maxIt):
-        P1 = GenPic.tournamentSelect(population,fitness,maxIt)
-        P2 = GenPic.tournamentSelect(population,fitness,maxIt)
-        C1,C2 = GenPic.crossover(P1,P2,i)
+        P1 = tournamentSelect(population,fitness,maxIt)
+        P2 = tournamentSelect(population,fitness,maxIt)
+        C1,C2 = crossover(P1,P2,i)
         C1.mutate();
         C2.mutate();
         #Substitute two parents with the new children
@@ -37,6 +37,15 @@ def GeneticAlgorithm(picfile,maxIt,nInd,nPol):
     return(best)
 
 
+def tournamentSelect(population,fitness,i,imax):
+    if (np.random.rand() > (0.1+i/imax*0.9)):
+        return(np.random.choice(population))
+    else:
+        ind = np.random.choice(np.arange(fitness.shape[0],replace=False))
+        if (fitness[ind[0]] > fitness[ind[1]]):
+            return(population[ind[0]])
+        else:
+            return(population[ind[1]])
 
 
 def alphaComposite(src, dst):
