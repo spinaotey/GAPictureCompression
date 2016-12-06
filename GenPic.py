@@ -8,8 +8,9 @@ def GeneticAlgorithm(picfile,maxIt,nInd,nPol):
     population = np.empty(nInd,dtype=np.object)
     fitness = np.empty(nInd,dtype=np.uint64)
     pic = Image.open(picfile)
+    bgrgb = stats.mode(np.array(pic.getdata()))[0][0]
     for i in range(nInd):
-        population[i] = PicGen(pic,nPol)
+        population[i] = PicGen(pic,nPol,bgrgb)
         fitness[i] = population[i].getFitness()
     #Find best
     fmax = fitness.argmax()
@@ -17,10 +18,10 @@ def GeneticAlgorithm(picfile,maxIt,nInd,nPol):
     bestFit = fitness[fmax]
     #Main loop
     i = 0   
-    while(i<maxIt):
-        P1 = tournamentSelect(population,fitness,maxIt)
-        P2 = tournamentSelect(population,fitness,maxIt)
-        C1,C2 = crossover(P1,P2,i)
+    for i in range(maxIt):
+        P1 = tournamentSelect(population,fitness,i,maxIt)
+        P2 = tournamentSelect(population,fitness,i,maxIt)
+        C1,C2 = crossover(P1,P2)
         C1.mutate();
         C2.mutate();
         #Substitute two parents with the new children
@@ -42,7 +43,8 @@ def tournamentSelect(population,fitness,i,imax):
         return(np.random.choice(population))
     else:
         ind = np.random.choice(np.arange(fitness.shape[0],replace=False))
-        if (fitness[ind[0]] > fitness[ind[1]]):
+#The lower the fitness, the better
+        if (fitness[ind[0]] < fitness[ind[1]]):
             return(population[ind[0]])
         else:
             return(population[ind[1]])
@@ -146,7 +148,7 @@ class PolyGen:
 
 class PicGen:
 
-    def __init__(self,image,n):
+    def __init__(self,image,n,bg):
         if(image.mode == "RGB"):
             image.putalpha(255);
         self.trgImg = image
@@ -154,8 +156,8 @@ class PicGen:
         self.x = image.width;
         self.y = image.height;
         self.n = n;
-        self.bg = stats.mode(np.array(image.getdata()))[0][0]
         self.polygon = np.ndarray((n,),dtype = np.object);
+        self.bg = bg
         for i in range(n):
             self.polygon[i] = PolyGen(self.x,self.y,np.random.randint(4)+3)
 
@@ -177,4 +179,3 @@ class PicGen:
         if not hasattr(self,"pic"):
             self.makePic();
         self.pic.show();
-
