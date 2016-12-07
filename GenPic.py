@@ -39,10 +39,10 @@ def GeneticAlgorithm(picfile,maxIt,nInd,nPol):
 
 
 def tournamentSelect(population,fitness,i,imax):
-    if (np.random.rand() > (0.1+i/imax*0.9)):
+    if (np.random.rand() > (0.7+i/imax*0.3)):
         return(np.random.choice(population))
     else:
-        ind = np.random.choice(np.arange(fitness.shape[0],replace=False))
+        ind = np.random.choice(np.arange(fitness.shape[0]),size=2,replace=False)
 #The lower the fitness, the better
         if (fitness[ind[0]] < fitness[ind[1]]):
             return(population[ind[0]])
@@ -97,18 +97,24 @@ class PolyGen:
         point[0,1] = bounded(np.random.randint(-self.dy,self.ymax+1+self.dy,dtype='int32'),self.ymax)
         return(point)
 
-    def __init__(self,x,y,npol=3):
-        self.n = np.int8(npol);
+
+    def __init__(self,x=0,y=0,n=3)
+        self.n = np.int8(n)
+        self.x = np.int32(x)
+        self.y = np.int32(y)
+        self.dx = x*PolyGen.bv
+        self.dy = y*PolyGen.bv
         self.coords = np.empty((npol,2),dtype='int32')
-        self.xmax = np.int32(x)
-        self.ymax = np.int32(y)
-        self.dx = x*PolyGen.bv;
-        self.coords[:,0] = np.random.randint(-self.dx,x+1+self.dx,npol,dtype='int32')
-        boundedv(self.coords[:,0],x)
-        self.dy = y*PolyGen.bv;
-        self.coords[:,1] = np.random.randint(-self.dy,y+1+self.dy,npol,dtype='int32')
-        boundedv(self.coords[:,1],y)
-        self.color = np.random.randint(0,256,4,dtype='uint16')
+
+    def new(x,y,n):
+        new = PolyGen(x,y,n)
+        new.coords[:,0] = np.random.randint(-new.dx,x+1+new.dx,n,dtype='int32')
+        boundedv(new.coords[:,0],new.x)
+        new.coords[:,1] = np.random.randint(-new.dy,y+1+new.dy,n,dtype='int32')
+        boundedv(new.coords[:,1],y)
+        new.color = np.int16(np.random.normal(scale=10,4))
+        boundedv(new.color,255)
+        return(new)
 
     def mutatePoint1(self,i):
         self.coords[i,:] = self.randomPoint();
@@ -122,6 +128,8 @@ class PolyGen:
         self.color %= 256
 
     def mutateN(self):
+        if hasattr(self,"poly"):
+            del(self.poly)
         if self.n == 3:
             i = np.int8(1)
         elif self.n == 6:
@@ -140,11 +148,12 @@ class PolyGen:
                                     
 
     def makePoly(self):
-        poly = Image.new('RGBA',(self.xmax,self.ymax),None)
-        polydraw = ImageDraw.Draw(poly)
-        polydraw.polygon(self.coords[:self.n,:].flatten().tolist(),
-                         fill=tuple(self.color))
-        return(poly)
+        if not hasattr(self,"poly"):
+            self.poly = Image.new('RGBA',(self.x,self.y),None)
+            polydraw = ImageDraw.Draw(self.poly)
+            polydraw.polygon(self.coords[:self.n,:].flatten().tolist(),
+                             fill=tuple(self.color))
+        return(self.poly)
 
 class PicGen:
 
@@ -156,10 +165,15 @@ class PicGen:
         self.x = image.width;
         self.y = image.height;
         self.n = n;
-        self.polygon = np.ndarray((n,),dtype = np.object);
+        self.polygon = np.ndarray(n,dtype = np.object);
         self.bg = bg
+
+    def new(image,n,bg):
+        new = PicGen(image,n,bg)
         for i in range(n):
-            self.polygon[i] = PolyGen(self.x,self.y,np.random.randint(4)+3)
+            new.polygon[i] = PolyGen.new(new.x,new.y,np.random.randint(4)+3)
+        return(new)
+
 
     def makePic(self):
         self.pic = Image.new("RGBA",self.size,tuple(self.bg))
@@ -179,3 +193,4 @@ class PicGen:
         if not hasattr(self,"pic"):
             self.makePic();
         self.pic.show();
+
