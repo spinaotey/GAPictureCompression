@@ -43,6 +43,17 @@ def tournamentSelect(population,fitness,nTour):
     m = fitness[ind].argmin()
     return(population[ind[m]])
     
+def crossover(P1,P2):
+    C1 = PicGen(P1.trgImg,P1.n,P1.bg)
+    C2 = PicGen(P1.trgImg,P1.n,P1.bg)
+    for i in range(0,P1.n,2):
+        C1.polygon[i] = P1.polygon[i]
+        C2.polygon[i] = P2.polygon[i]
+    for i in range(1,P1.n,2):
+        C1.polygon[i] = P2.polygon[i]
+        C2.polygon[i] = P1.polygon[i]
+    return(C1,C2)
+
 
 
 def alphaComposite(src, dst):
