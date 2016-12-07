@@ -3,7 +3,7 @@ from PIL import Image
 from PIL import ImageDraw
 from scipy import stats
 
-def GeneticAlgorithm(picfile,maxIt,nInd,nPol,nTour):
+def GeneticAlgorithm(picfile,maxIt,nInd,nPol,nTour,p):
     #Initiate population and assess fitness
     population = np.empty(nInd,dtype=np.object)
     fitness = np.empty(nInd,dtype=np.uint64)
@@ -22,8 +22,8 @@ def GeneticAlgorithm(picfile,maxIt,nInd,nPol,nTour):
         P1 = tournamentSelect(population,fitness,nTour)
         P2 = tournamentSelect(population,fitness,nTour)
         C1,C2 = crossover(P1,P2)
-        C1.mutate();
-        C2.mutate();
+        C1.mutate(p);
+        C2.mutate(p);
         #Substitute two parents with the new children
         ind = np.choice(np.arange(nInd),size=2,replace=False)
         population[ind] = (C1,C2)
@@ -126,12 +126,12 @@ class PolyGen:
         self.coords[i,:] = self.randomPoint();
 
     def mutatePoint2(self,i):
-        self.coords[i,:] += np.int32(np.random.normal(scale=min(self.xmax,self.ymax)/10,size=2))
+        self.coords[i,:] += np.int32(np.random.normal(scale=min(self.xmax,self.ymax)/20,size=2))
         boundedv(self.coords[i,:],self.xmax)
 
     def mutateColor(self):
-        self.color += np.uint16(np.random.normal(scale=256/15,size=4))
-        self.color %= 256
+        self.color += np.int16(np.random.normal(scale=255/8,size=4))
+        boundedv(self.color)
 
     def mutateN(self):
         if hasattr(self,"poly"):
@@ -200,3 +200,11 @@ class PicGen:
             self.makePic();
         self.pic.show();
 
+    def mutate(self,p):
+        for i in np.argwhere(np.random.rand(self.n)<p).flatten():
+            self.polygon[i].mutateN()
+        for i in np.argwhere(np.random.rand(self.n)<p).flatten():
+            self.poly[i].mutateColor()
+        for i in np.argwhere(np.random.rand(self.n)<p).flatten():
+            for j in np.argwhere(np.random.rand(self.poly[i].n)<0.5):
+            self.poly[i].mutatePoint2(j)
