@@ -3,7 +3,7 @@ from PIL import Image
 from PIL import ImageDraw
 from scipy import stats
 
-def GeneticAlgorithm(picfile,maxIt,nInd,nPol):
+def GeneticAlgorithm(picfile,maxIt,nInd,nPol,nTour):
     #Initiate population and assess fitness
     population = np.empty(nInd,dtype=np.object)
     fitness = np.empty(nInd,dtype=np.uint64)
@@ -13,14 +13,14 @@ def GeneticAlgorithm(picfile,maxIt,nInd,nPol):
         population[i] = PicGen(pic,nPol,bgrgb)
         fitness[i] = population[i].getFitness()
     #Find best
-    fmax = fitness.argmax()
-    best = population[fmax]
-    bestFit = fitness[fmax]
+    fmin = fitness.argmin()
+    best = population[fmin]
+    bestFit = fitness[fmin]
     #Main loop
     i = 0   
     for i in range(maxIt):
-        P1 = tournamentSelect(population,fitness,i,maxIt)
-        P2 = tournamentSelect(population,fitness,i,maxIt)
+        P1 = tournamentSelect(population,fitness,nTour)
+        P2 = tournamentSelect(population,fitness,nTour)
         C1,C2 = crossover(P1,P2)
         C1.mutate();
         C2.mutate();
@@ -28,26 +28,21 @@ def GeneticAlgorithm(picfile,maxIt,nInd,nPol):
         ind = np.choice(np.arange(nInd),size=2,replace=False)
         population[ind] = (C1,C2)
         fitness[ind[0]] = population[ind[0]].getFitness()
-        if (fitness[ind[0]] > bestFit):
+        if (fitness[ind[0]] < bestFit):
             bestFit = fitness[ind[0]]
             best = population[ind[0]]
         fitness[ind[1]] = population[ind[1]].getFitness()
-        if (fitness[ind[1]] > bestFit):
+        if (fitness[ind[1]] < bestFit):
             bestFit = fitness[ind[1]]
             best = population[ind[1]]
     return(best)
 
 
-def tournamentSelect(population,fitness,i,imax):
-    if (np.random.rand() > (0.7+i/imax*0.3)):
-        return(np.random.choice(population))
-    else:
-        ind = np.random.choice(np.arange(fitness.shape[0]),size=2,replace=False)
-#The lower the fitness, the better
-        if (fitness[ind[0]] < fitness[ind[1]]):
-            return(population[ind[0]])
-        else:
-            return(population[ind[1]])
+def tournamentSelect(population,fitness,nTour):
+    ind = np.random.choice(np.arange(fitness.shape[0]),size=nTour)
+    m = fitness[ind].argmin()
+    return(population[ind[m]])
+    
 
 
 def alphaComposite(src, dst):
