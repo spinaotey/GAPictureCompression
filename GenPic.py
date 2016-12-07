@@ -2,40 +2,45 @@ import numpy as np
 from PIL import Image
 from PIL import ImageDraw
 from scipy import stats
+import time
 
-def GeneticAlgorithm(picfile,maxIt,nInd,nPol,nTour,p):
+def GeneticAlgorithm(picfile,maxIt,nInd,nPol,nNew,nTour,p):
     #Initiate population and assess fitness
     population = np.empty(nInd,dtype=np.object)
     fitness = np.empty(nInd,dtype=np.uint64)
     pic = Image.open(picfile)
     bgrgb = stats.mode(np.array(pic.getdata()))[0][0]
     for i in range(nInd):
-        population[i] = PicGen(pic,nPol,bgrgb)
+        population[i] = PicGen.new(pic,nPol,bgrgb)
         fitness[i] = population[i].getFitness()
     #Find best
     fmin = fitness.argmin()
     best = population[fmin]
     bestFit = fitness[fmin]
     #Main loop
-    i = 0   
+    bests = np.empty(maxIt+1,dtype=np.uint64)
+    bests[0] = bestFit
     for i in range(maxIt):
-        P1 = tournamentSelect(population,fitness,nTour)
-        P2 = tournamentSelect(population,fitness,nTour)
-        C1,C2 = crossover(P1,P2)
-        C1.mutate(p);
-        C2.mutate(p);
-        #Substitute two parents with the new children
-        ind = np.choice(np.arange(nInd),size=2,replace=False)
-        population[ind] = (C1,C2)
-        fitness[ind[0]] = population[ind[0]].getFitness()
-        if (fitness[ind[0]] < bestFit):
-            bestFit = fitness[ind[0]]
-            best = population[ind[0]]
-        fitness[ind[1]] = population[ind[1]].getFitness()
-        if (fitness[ind[1]] < bestFit):
-            bestFit = fitness[ind[1]]
-            best = population[ind[1]]
-    return(best)
+        t = time.time()
+        C = np.empty(nNew,dtype=np.object)
+        cFitness = np.empty(nNew,dtype=np.uint64)
+        for j in range(nNew//2):
+            P1 = tournamentSelect(population,fitness,nTour)
+            P2 = tournamentSelect(population,fitness,nTour)
+            C[j*2],C[j*2+1] = crossover(P1,P2)
+            C[j*2].mutate(p);
+            C[j*2+1].mutate(p);
+            cFitness[j*2] = C[j*2].getFitness()
+            cFitness[j*2+1] = C[j*2+1].getFitness()
+        #Substitute parents with the new children
+        ind = np.random.choice(np.arange(nInd),size=nNew,replace=False)
+        population[ind] = C
+        fitness[ind] = cFitness
+        if cFitness.min() < bestFit:
+            best = C[cFitness.argmin()]
+        bests[i+1] = fitness.min()
+        print('Iteration %d: %lf s.\n'%(i+1,time.time()-t))
+    return(best,bests)
 
 
 def tournamentSelect(population,fitness,nTour):
@@ -99,18 +104,18 @@ class PolyGen:
 
     def randomPoint(self):
         point = np.empty((1,2),dtype='int32')
-        point[0,0] = bounded(np.random.randint(-self.dx,self.xmax+1+self.dx,dtype='int32'),self.xmax)
-        point[0,1] = bounded(np.random.randint(-self.dy,self.ymax+1+self.dy,dtype='int32'),self.ymax)
+        point[0,0] = bounded(np.random.randint(-self.dx,self.x+1+self.dx,dtype='int32'),self.x)
+        point[0,1] = bounded(np.random.randint(-self.dy,self.y+1+self.dy,dtype='int32'),self.y)
         return(point)
 
 
-    def __init__(self,x=0,y=0,n=3)
+    def __init__(self,x=0,y=0,n=3):
         self.n = np.int8(n)
         self.x = np.int32(x)
         self.y = np.int32(y)
         self.dx = x*PolyGen.bv
         self.dy = y*PolyGen.bv
-        self.coords = np.empty((npol,2),dtype='int32')
+        self.coords = np.empty((n,2),dtype='int32')
 
     def new(x,y,n):
         new = PolyGen(x,y,n)
@@ -118,7 +123,7 @@ class PolyGen:
         boundedv(new.coords[:,0],new.x)
         new.coords[:,1] = np.random.randint(-new.dy,y+1+new.dy,n,dtype='int32')
         boundedv(new.coords[:,1],y)
-        new.color = np.int16(np.random.normal(scale=10,4))
+        new.color = np.int16(np.random.normal(scale=10,size=4))
         boundedv(new.color,255)
         return(new)
 
@@ -126,12 +131,13 @@ class PolyGen:
         self.coords[i,:] = self.randomPoint();
 
     def mutatePoint2(self,i):
-        self.coords[i,:] += np.int32(np.random.normal(scale=min(self.xmax,self.ymax)/20,size=2))
-        boundedv(self.coords[i,:],self.xmax)
+        self.coords[i,:] += np.int32(np.random.normal(scale=min(self.x,self.y)/20,size=2))
+        self.coords[i,0] = bounded(self.coords[i,0],self.x)
+        self.coords[i,1] = bounded(self.coords[i,1],self.y)
 
     def mutateColor(self):
         self.color += np.int16(np.random.normal(scale=255/8,size=4))
-        boundedv(self.color)
+        boundedv(self.color,255)
 
     def mutateN(self):
         if hasattr(self,"poly"):
@@ -204,7 +210,7 @@ class PicGen:
         for i in np.argwhere(np.random.rand(self.n)<p).flatten():
             self.polygon[i].mutateN()
         for i in np.argwhere(np.random.rand(self.n)<p).flatten():
-            self.poly[i].mutateColor()
+            self.polygon[i].mutateColor()
         for i in np.argwhere(np.random.rand(self.n)<p).flatten():
-            for j in np.argwhere(np.random.rand(self.poly[i].n)<0.5):
-            self.poly[i].mutatePoint2(j)
+            for j in np.argwhere(np.random.rand(self.polygon[i].n)<0.5):
+                self.polygon[i].mutatePoint2(j)
