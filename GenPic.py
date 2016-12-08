@@ -154,9 +154,9 @@ class PolyGen:
                                     np.random.randint(self.n,size=1,dtype='int8'),
                                     self.randomPoint(),0)
         else:
-            self.coords = np.delete(self.coords,
-                                    np.random.randint(self.n,size=1,dtype='int8'),
-                                    0)
+            j = np.random.randint(self.n,size=1,dtype='int8')
+            self.coords = np.delete(self.coords,j,self.coords.mean(axis=0),0)
+            self.mutatePoint2(j)
                                     
 
     def makePoly(self):
@@ -207,7 +207,7 @@ class PicGen:
         self.pic.show();
 
     def mutate(self,p):
-        for i in np.argwhere(np.random.rand(self.n)<p).flatten():
+        for i in np.argwhere(np.random.rand(self.n)<(p/10)).flatten():
             self.polygon[i].mutateN()
         for i in np.argwhere(np.random.rand(self.n)<p).flatten():
             self.polygon[i].mutateColor()
