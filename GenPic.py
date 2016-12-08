@@ -150,13 +150,13 @@ class PolyGen:
             i = np.random.choice(np.int8([-1,1]))
         self.n += i
         if i == 1:
-            self.coords = np.insert(self.coords,
-                                    np.random.randint(self.n,size=1,dtype='int8'),
-                                    self.randomPoint(),0)
-        else:
             j = np.random.randint(self.n,size=1,dtype='int8')
-            self.coords = np.delete(self.coords,j,self.coords.mean(axis=0),0)
+            self.coords = np.insert(self.coords,j,self.coords.mean(axis=0),0)
             self.mutatePoint2(j)
+        else:
+            self.coords = np.delete(self.coords,
+                                    np.random.randint(self.n,size=1,dtype='int8')
+                                    ,0)
                                     
 
     def makePoly(self):
