@@ -134,10 +134,14 @@ class PolyGen:
         self.coords[i,:] += np.int32(np.random.normal(scale=min(self.x,self.y)/20,size=2))
         self.coords[i,0] = bounded(self.coords[i,0],self.x)
         self.coords[i,1] = bounded(self.coords[i,1],self.y)
+        if hasattr(self,"poly"):
+            del(self.poly)
 
     def mutateColor(self):
         self.color += np.int16(np.random.normal(scale=255/8,size=4))
         boundedv(self.color,255)
+        if hasattr(self,"poly"):
+            del(self.poly)
 
     def mutateN(self):
         if hasattr(self,"poly"):
@@ -207,10 +211,18 @@ class PicGen:
         self.pic.show();
 
     def mutate(self,p):
-        for i in np.argwhere(np.random.rand(self.n)<(p/10)).flatten():
-            self.polygon[i].mutateN()
+#        for i in np.argwhere(np.random.rand(self.n)<(p/10)).flatten():
+#            self.polygon[i].mutateN()
+        i = -1
         for i in np.argwhere(np.random.rand(self.n)<p).flatten():
             self.polygon[i].mutateColor()
+        if i != -1:
+            if hasattr(self,"pic"):
+                del(self.pic)
+        j = -1
         for i in np.argwhere(np.random.rand(self.n)<p).flatten():
             for j in np.argwhere(np.random.rand(self.polygon[i].n)<0.5):
                 self.polygon[i].mutatePoint2(j)
+        if j != -1:
+            if hasattr(self,"pic"):
+                del(self.pic)
