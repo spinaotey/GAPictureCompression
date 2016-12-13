@@ -4,8 +4,10 @@ from PIL import ImageDraw
 from scipy import stats
 import time
 
-def GeneticAlgorithm(picfile,maxIt,nInd,nPol,nNew,nTour,p):
+def GeneticAlgorithm(picfile,maxIt,nInd,nPol,nNew,nTour,p,colScale=100,coordProp=10):
     #Initiate population and assess fitness
+    PolyGen.colScale = colScale
+    PolyGen.coordProp = coordProcoordProp
     population = np.empty(nInd,dtype=np.object)
     fitness = np.empty(nInd,dtype=np.uint64)
     pic = Image.open(picfile)
@@ -101,6 +103,8 @@ def bounded(x,xmax):
 
 class PolyGen:
     bv = 0.001
+    colScale = 100
+    coordProp = 10
 
     def randomPoint(self):
         point = np.empty((1,2),dtype='int32')
@@ -131,14 +135,14 @@ class PolyGen:
         self.coords[i,:] = self.randomPoint();
 
     def mutatePoint2(self,i):
-        self.coords[i,:] += np.int32(np.random.normal(scale=min(self.x,self.y)/20,size=2))
+        self.coords[i,:] += np.int32(np.random.normal(scale=min(self.x,self.y)/PolyGen.coordProp,size=2))
         self.coords[i,0] = bounded(self.coords[i,0],self.x)
         self.coords[i,1] = bounded(self.coords[i,1],self.y)
         if hasattr(self,"poly"):
             del(self.poly)
 
     def mutateColor(self):
-        self.color += np.int16(np.random.normal(scale=255/8,size=4))
+        self.color += np.int16(np.random.normal(scale=PolyGen.colScale,size=4))
         boundedv(self.color,255)
         if hasattr(self,"poly"):
             del(self.poly)
